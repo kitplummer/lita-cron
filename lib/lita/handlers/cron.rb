@@ -46,7 +46,7 @@ module Lita
             job = Lita::Handlers.get_scheduler.cron j['cron_line'] do |job|
               target = Source.new(user: j['u_id'], room: j['room'])
               robot.send_messages(target, k)
-              log.info "MSG: #{k} -> #{target}"
+              log.info "SENDING: #{k} -> #{target}"
             end
 
             log.info "Created cron job: #{j['cron_line']} #{k}."
@@ -67,7 +67,8 @@ log.info "NEW: #{response.matches} from #{response.message.source.user.id} in #{
         else
           begin
             job = Lita::Handlers.get_scheduler.cron cron do |job|
-                response.reply(message)
+              log.info("SENDING: #{message}")
+              response.reply(message)
             end
 
             redis.hset(REDIS_KEY, message, {
@@ -88,6 +89,7 @@ log.info "NEW: #{response.matches} from #{response.message.source.user.id} in #{
       def delete(response)
         if redis.hexists(REDIS_KEY, response.matches[0][0])
           job = JSON.parse(redis.hget(REDIS_KEY, response.matches[0][0]))
+          log.info "DELETE: #{response.matches[0][0]}"
 
           Lita::Handlers.get_scheduler.unschedule(job["j_id"])
           redis.hdel(REDIS_KEY, response.matches[0][0]) >= 1
@@ -98,6 +100,7 @@ log.info "NEW: #{response.matches} from #{response.message.source.user.id} in #{
       end
 
       def list(response)
+        log.info "LISTing all cron jobs"
         keys = redis.hgetall(REDIS_KEY)
         jobs = Lita::Handlers.get_scheduler.cron_jobs
         if jobs.empty?
