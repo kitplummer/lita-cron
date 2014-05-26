@@ -18,6 +18,7 @@ module Lita
 
       def initialize(robot)
         super
+
       end
 
       def self.default_config(config)
@@ -37,29 +38,26 @@ module Lita
         "cron list" => "List all cron jobs."
       })
 
-
       def load_on_start(payload)
-        log.info "Initializing existing cron jobs."
         jobs = redis.hgetall(REDIS_KEY)
         jobs.each do |k,v|
           j = JSON.parse(v)
-          create_job(j['cron_line'], k)
-          log.info "Created cron job: #{j['cron_line']} #{k}."
-        end
-      end
+          begin
+            job = Lita::Handlers.get_scheduler.cron j['cron_line'] do |job|
+              target = Source.new(user: j['u_id'], room: j['room'])
+              robot.send_messages(target, k)
+              log.info "MSG: #{k} -> #{target}"
+            end
 
-      def create_job(cron, message)
-        job = Lita::Handlers.get_scheduler.cron cron do |job|
-            response.reply(message)
+            log.info "Created cron job: #{j['cron_line']} #{k}."
+          rescue ArgumentError => e
+            response.reply "argument error, perhaps the cronline? #{e.message}"
+          end
         end
-
-        redis.hset(REDIS_KEY, message, { :cron_line => job.cron_line.original, :j_id => job.job_id }.to_json)
-        jobs = Lita::Handlers.get_scheduler.cron_jobs
-        return "New cron job: #{cron} #{message}"
       end
 
       def new(response)
-        log.info "NEW: #{response.matches}"
+log.info "NEW: #{response.matches} from #{response.message.source.user.id} in #{response.message.source.room}"
         input = response.matches[0][0].split(" ")
         cron = input[0..4].join(" ")
         message = input[5..input.count()-1].join(" ")
@@ -68,7 +66,19 @@ module Lita
           response.reply "#{message} already exists, delete first."
         else
           begin
-            response.reply(create_job(cron, message))
+            job = Lita::Handlers.get_scheduler.cron cron do |job|
+                response.reply(message)
+            end
+
+            redis.hset(REDIS_KEY, message, {
+              :cron_line => job.cron_line.original,
+              :j_id => job.job_id,
+              :u_id => response.message.source.user.id,
+              :room => response.message.source.room }.to_json
+            )
+            jobs = Lita::Handlers.get_scheduler.cron_jobs
+
+            response.reply("New cron job: #{cron} #{message}")
           rescue ArgumentError => e
             response.reply "argument error, perhaps the cronline? #{e.message}"
           end

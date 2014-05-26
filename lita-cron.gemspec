@@ -1,6 +1,6 @@
 Gem::Specification.new do |spec|
   spec.name          = "lita-cron"
-  spec.version       = "0.0.1"
+  spec.version       = "0.0.2"
   spec.authors       = ["Kit Plummer"]
   spec.email         = ["kitplummer@gmail.com"]
   spec.description   = %q{A Lita handler for creating cron-spec'd replies.}
