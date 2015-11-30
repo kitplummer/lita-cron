@@ -1,3 +1,6 @@
+[![Code
+Climate](https://codeclimate.com/github/joren/lita-cron/badges/gpa.svg)](https://codeclimate.com/github/joren/lita-cron)
+
 # lita-cron
 
 A Lita handler for a cron-based message scheduler. Allows you to
@@ -10,7 +13,7 @@ deliveries through a lita restart (just recreates jobs from db.)
 Add lita-answers to your Lita instance's Gemfile:
 
 ``` ruby
-gem "lita-cron"
+gem 'lita-cron'
 ```
 
 ## Usage
