@@ -1,1 +1,0 @@
-require "lita/handlers/cron"
